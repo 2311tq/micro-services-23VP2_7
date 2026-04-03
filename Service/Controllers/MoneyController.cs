@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Service.Models;
 using Prometheus;
@@ -21,14 +21,7 @@ namespace WebAPIApp.Controllers
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
 
-        private static readonly Histogram RequestLatency =
-            Metrics.CreateHistogram(
-                "api_request_duration_seconds",
-                "",
-                new HistogramConfiguration
-                {
-                    Buckets = Histogram.ExponentialBuckets(0.01, 2, 10)
-                });
+      
 
 
         public MoneyController()
@@ -80,22 +73,20 @@ namespace WebAPIApp.Controllers
         }
 
         // GET api/money/{id}
-        [HttpGet("{id}")]
-       
-
-      
+        [HttpGet("{id}")]     
         public async Task<ActionResult<Money_>> Get(string id)
         {
             RequestsTotal.Inc();
 
-            using (RequestLatency.NewTimer())
+          
             {
                 var money = await _moneyCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
 
                 if (money == null)
+                {
+                    ErrorsTotal.Inc();
                     return NotFound();
-
-
+                }
                 var result = new Money_
                 {
                     Name = money.Name,
@@ -114,7 +105,7 @@ namespace WebAPIApp.Controllers
         {
             RequestsTotal.Inc();
 
-            using (RequestLatency.NewTimer())
+          
             {
                 try
                 {
@@ -178,7 +169,7 @@ namespace WebAPIApp.Controllers
         {
 
             RequestsTotal.Inc();
-            using (RequestLatency.NewTimer())
+           
             {
                 if (moneyWithoutId == null) 
                 {  
