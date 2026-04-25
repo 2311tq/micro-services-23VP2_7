@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36301.6
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{FE11FF0B-85EC-47AC-AA1B-100A5C04E015}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject1", "TestProject1\TestProject1.csproj", "{3B7DDED1-5D05-4A14-AB0F-A3D0EB28FD8E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FE11FF0B-85EC-47AC-AA1B-100A5C04E015} = {FE11FF0B-85EC-47AC-AA1B-100A5C04E015}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{754FC069-D67B-A9D7-50A1-8D1CA196D8F1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FE11FF0B-85EC-47AC-AA1B-100A5C04E015}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE11FF0B-85EC-47AC-AA1B-100A5C04E015}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE11FF0B-85EC-47AC-AA1B-100A5C04E015}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE11FF0B-85EC-47AC-AA1B-100A5C04E015}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B7DDED1-5D05-4A14-AB0F-A3D0EB28FD8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B7DDED1-5D05-4A14-AB0F-A3D0EB28FD8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B7DDED1-5D05-4A14-AB0F-A3D0EB28FD8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B7DDED1-5D05-4A14-AB0F-A3D0EB28FD8E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6AA31AE2-9FBB-46E9-83CA-81E40D664400}
+	EndGlobalSection
+EndGlobal
