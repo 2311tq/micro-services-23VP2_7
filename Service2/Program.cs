@@ -23,25 +23,11 @@ var uptimeTimer = Stopwatch.StartNew();
 var uptimeMetric = Metrics.CreateGauge(
     "service_uptime_seconds2",
     "");
-
-
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 027f1764bf6c9d9b2db273a62993dfe0e6b6c170
 var RequestLatency =
     Metrics.CreateSummary(
-        "api_request_duration_seconds",
+        "api_request_duration_seconds2",
         ""
      );
-<<<<<<< HEAD
-=======
-var avgRequestDuration = Metrics.CreateSummary(
-    "http_request_avg_duration_ms",
-    ""
-    );
->>>>>>> 027f1764bf6c9d9b2db273a62993dfe0e6b6c170
 
 
 
@@ -51,11 +37,7 @@ app.UseHttpMetrics();
 
 app.Use(async (context, next) =>
 {
-<<<<<<< HEAD
    
-=======
-    activeRequests.Inc();
->>>>>>> 027f1764bf6c9d9b2db273a62993dfe0e6b6c170
     var sw = Stopwatch.StartNew();
 
 
@@ -76,11 +58,7 @@ app.Use(async (context, next) =>
         var method = context.Request.Method;
         var path = context.Request.Path;
         RequestLatency.Observe(sw.Elapsed.TotalSeconds);
-<<<<<<< HEAD
       
-=======
-        activeRequests.Dec();
->>>>>>> 027f1764bf6c9d9b2db273a62993dfe0e6b6c170
     }
 });
 
@@ -100,5 +78,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
 

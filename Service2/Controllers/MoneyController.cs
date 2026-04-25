@@ -25,18 +25,6 @@ namespace WebAPIApp.Controllers
 
         private static readonly Counter ErrorsTotal2 =
             Metrics.CreateCounter("api_errors_total2", "");
-
-
-        private static readonly Histogram RequestLatency =
-            Metrics.CreateHistogram(
-                "api_request_duration_seconds2",
-                "",
-                new HistogramConfiguration
-                {
-                    Buckets = Histogram.ExponentialBuckets(0.01, 2, 10)
-                });
-
-
         public MoneyController(IDistributedCache cache)
         {
             _cache = cache;
@@ -70,14 +58,12 @@ namespace WebAPIApp.Controllers
 
             if (totalCount > 1000)
             {
-
                 entities = await _moneyCollection.Aggregate()
                     .Sample(1000)
                     .ToListAsync();
             }
             else
             {
-
                 entities = await _moneyCollection.Find(_ => true).ToListAsync();
             }
 
@@ -92,8 +78,6 @@ namespace WebAPIApp.Controllers
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
             };
-
-
             await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), options);
 
             return Ok(result);
@@ -309,7 +293,7 @@ namespace WebAPIApp.Controllers
             var cached = await _cache.GetStringAsync(cacheKey);
             if (cached != null)
             {
-                var data = JsonSerializer.Deserialize<IEnumerable<Money_>>(cached);
+                var data = JsonSerializer.Deserialize<Money_>(cached);
                 return Ok(data);
             }
             switch (comparison.ToLower())
