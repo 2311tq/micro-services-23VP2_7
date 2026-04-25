@@ -24,12 +24,6 @@ namespace TestProject3
         }
 
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            _httpClient?.Dispose();
-        }
-
         [TestMethod]
         public async Task Add100Elements1()
         {
@@ -58,7 +52,7 @@ namespace TestProject3
         }
 
         [TestMethod]
-        public async Task Add10000Elements()
+        public async Task Add10000Elements1()
         {
             int successCount = 0;
             Random rnd = new Random();
@@ -85,44 +79,43 @@ namespace TestProject3
         }
 
         [TestMethod]
-        public async Task DeleteAllElements()
+        public async Task DeleteAllElements1()
         {
-            int DeletedCount = 0;
-
-
             while (true)
             {
-
                 var getResponse = await _httpClient.GetAsync("api/money");
                 var content = await getResponse.Content.ReadAsStringAsync();
 
-                if (content == "[]")
+                using JsonDocument doc = JsonDocument.Parse(content);
+
+                if (doc.RootElement.GetArrayLength() == 0)
                     break;
 
-                using JsonDocument doc = JsonDocument.Parse(content);
                 var ids = new List<string>();
 
                 foreach (var element in doc.RootElement.EnumerateArray())
                 {
-                    if (element.TryGetProperty("id", out var id))
+                    if (element.TryGetProperty("Id", out var id))
                         ids.Add(id.GetString());
                 }
 
-                if (ids.Count == 0)
-                    break;
-
-
                 foreach (var id in ids)
                 {
-                    var deleteResponse = await _httpClient.DeleteAsync($"api/money/{id}");
-
+                    await _httpClient.DeleteAsync($"api/money/{id}");
                 }
+
+                await Task.Delay(100);
             }
 
 
+            await Task.Delay(200);
+
             var finalResponse = await _httpClient.GetAsync("api/money");
             var finalContent = await finalResponse.Content.ReadAsStringAsync();
-            Assert.AreEqual("[]", finalContent);
+
+            using JsonDocument finalDoc = JsonDocument.Parse(finalContent);
+
+            Assert.AreEqual(0, finalDoc.RootElement.GetArrayLength());
         }
     }
 }
