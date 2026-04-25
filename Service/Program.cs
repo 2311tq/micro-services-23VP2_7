@@ -4,15 +4,21 @@ using Service.Models;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using WebAPIApp.Models;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 var builder = WebApplication.CreateBuilder(args);
 
 
-// Add services to the container
+// Add services to the container....
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+    options.InstanceName = "service1:";
+});
 
 var app = builder.Build();
 var uptimeTimer = Stopwatch.StartNew();

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Service.Models;
 using Prometheus;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace WebAPIApp.Controllers
 {
@@ -10,54 +12,67 @@ namespace WebAPIApp.Controllers
     public class MoneyController : ControllerBase
     {
         private readonly IMongoCollection<Money> _moneyCollection;
-      
+        private readonly IDistributedCache _cache;
         private static readonly Gauge MoneyCount =
     Metrics.CreateGauge(
         "money_collection_size",
         "");
         private static readonly Counter ErrorsTotal =
           Metrics.CreateCounter("api_errors_total", "");
-        
+
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
 
       
 
 
-        public MoneyController()
+        public MoneyController(IDistributedCache cache)
         {
-         
+            _cache = cache;
+
             var client = new MongoClient("mongodb://localhost:27017");
-            var database = client.GetDatabase("Numismatic_Club");
-            _moneyCollection = database.GetCollection<Money>("Money");
+            var db = client.GetDatabase("Numismatic_Club");
+            _moneyCollection = db.GetCollection<Money>("Money");
+
+            MoneyCount.Set(_moneyCollection.CountDocuments(_ => true));
             InitializeMetric();
         }
         private async void InitializeMetric()
         {
             var count = await _moneyCollection.CountDocumentsAsync(_ => true);
             MoneyCount.Set(count);
-           
+
         }
+
+       
 
         // GET api/money
         [HttpGet]
         public async Task<ActionResult<Money>> Get()
         {
             RequestsTotal.Inc();
+            string cacheKey = "money_all";
+
+            var cached = await _cache.GetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                var data = JsonSerializer.Deserialize<object>(cached);
+                return Ok(data);
+            }
             var totalCount = await _moneyCollection.CountDocumentsAsync(_ => true);
 
             List<Money> entities;
 
             if (totalCount > 1000)
             {
-                
+
                 entities = await _moneyCollection.Aggregate()
                     .Sample(1000)
                     .ToListAsync();
             }
             else
             {
-               
+
                 entities = await _moneyCollection.Find(_ => true).ToListAsync();
             }
 
@@ -68,18 +83,38 @@ namespace WebAPIApp.Controllers
                 m.Year_of_creation,
                 m.Country
             });
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            };
+
+
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), options);
 
             return Ok(result);
         }
 
         // GET api/money/{id}
-        [HttpGet("{id}")]     
+        [HttpGet("{id}")]
         public async Task<ActionResult<Money_>> Get(string id)
         {
             RequestsTotal.Inc();
 
-          
+
             {
+                if (id.Length != 24)
+                {
+                    ErrorsTotal.Inc();
+                    return NotFound("id состоит из 24 символов");
+                }
+                string cacheKey = $"money_{id}";
+
+                var cached = await _cache.GetStringAsync(cacheKey);
+                if (cached != null)
+                {
+                    var data = JsonSerializer.Deserialize<Money_>(cached);
+                    return Ok(data);
+                }
                 var money = await _moneyCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
 
                 if (money == null)
@@ -93,11 +128,15 @@ namespace WebAPIApp.Controllers
                     Year_of_creation = money.Year_of_creation,
                     Country = money.Country
                 };
-
+                var options = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                };
+                await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), options);
                 return Ok(result);
             }
         }
-        
+
 
         // POST api/money
         [HttpPost]
@@ -105,11 +144,11 @@ namespace WebAPIApp.Controllers
         {
             RequestsTotal.Inc();
 
-          
+
             {
                 try
                 {
-                  
+
                     if (moneyWithoutId == null)
                     {
                         ErrorsTotal.Inc();
@@ -143,7 +182,7 @@ namespace WebAPIApp.Controllers
 
                     await _moneyCollection.InsertOneAsync(money);
 
-                  
+
 
                     var result = new Money_
                     {
@@ -151,12 +190,13 @@ namespace WebAPIApp.Controllers
                         Year_of_creation = money.Year_of_creation,
                         Country = money.Country
                     };
+                    await _cache.RemoveAsync("money_all");
                     MoneyCount.Inc();
                     return CreatedAtAction(nameof(Get), new { id = money.Id }, result);
                 }
                 catch
                 {
-                  
+
                     throw;
                 }
             }
@@ -168,20 +208,26 @@ namespace WebAPIApp.Controllers
 
         {
 
+
             RequestsTotal.Inc();
-           
+            if (id.Length != 24)
             {
-                if (moneyWithoutId == null) 
-                {  
-                  
-                    return BadRequest(); 
+                ErrorsTotal.Inc();
+                return NotFound("id состоит из 24 символов");
+            }
+
+            {
+                if (moneyWithoutId == null)
+                {
+
+                    return BadRequest();
                 }
-                 
+
 
                 var existingMoney = await _moneyCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
                 if (existingMoney == null)
                 {
-                    
+
                     return NotFound();
                 }
 
@@ -198,10 +244,12 @@ namespace WebAPIApp.Controllers
                     x => x.Id == id,
                     updatedMoney
                 );
+                await _cache.RemoveAsync("money_all");
+                await _cache.RemoveAsync($"money_{id}");
 
                 if (result.MatchedCount == 0)
                 {
-                   
+
                     return NotFound();
                 }
 
@@ -222,13 +270,25 @@ namespace WebAPIApp.Controllers
         public async Task<ActionResult> Delete(string id)
         {
             RequestsTotal.Inc();
+
+            if (id.Length != 24)
+            {
+                ErrorsTotal.Inc();
+                return NotFound("id состоит из 24 символов");
+            }
+
             var result = await _moneyCollection.DeleteOneAsync(x => x.Id == id);
 
             if (result.DeletedCount == 0)
             {
-               
+                ErrorsTotal.Inc();
                 return NotFound();
             }
+
+
+
+            await _cache.RemoveAsync($"money_{id}");
+            await _cache.RemoveAsync("money_all");
             MoneyCount.Dec();
             return Ok();
         }
@@ -239,23 +299,30 @@ namespace WebAPIApp.Controllers
         {
             var query = _moneyCollection.AsQueryable();
             RequestsTotal.Inc();
+            string cacheKey = $"money_filter_{comparison}_{year}";
 
+            var cached = await _cache.GetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                var data = JsonSerializer.Deserialize<IEnumerable<Money_>>(cached);
+                return Ok(data);
+            }
             switch (comparison.ToLower())
-                {
-                    case "больше":
-                        query = query.Where(x => x.Year_of_creation > year.Value);
-                        break;
+            {
+                case "больше":
+                    query = query.Where(x => x.Year_of_creation > year.Value);
+                    break;
 
-                    case "меньше":
-                        query = query.Where(x => x.Year_of_creation < year.Value);
-                        break;
+                case "меньше":
+                    query = query.Where(x => x.Year_of_creation < year.Value);
+                    break;
                 default:
                     {
                         ErrorsTotal.Inc();
                         return BadRequest("Значение сравнения разрешено использовать только 'больше' или 'меньше'");
                     }
-                }
-            
+            }
+
             var entities = await Task.Run(() => query.ToList());
             var result = entities.Select(m => new Money_
             {
@@ -263,7 +330,11 @@ namespace WebAPIApp.Controllers
                 Year_of_creation = m.Year_of_creation,
                 Country = m.Country
             });
-
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            };
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(result), options);
             return Ok(result);
         }
     }
