@@ -23,8 +23,6 @@ namespace WebAPIApp.Controllers
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
 
-      
-
 
         public MoneyController(IDistributedCache cache)
         {
@@ -304,7 +302,7 @@ namespace WebAPIApp.Controllers
             var cached = await _cache.GetStringAsync(cacheKey);
             if (cached != null)
             {
-                var data = JsonSerializer.Deserialize<IEnumerable<Money_>>(cached);
+                var data = JsonSerializer.Deserialize<Money_>(cached);
                 return Ok(data);
             }
             switch (comparison.ToLower())

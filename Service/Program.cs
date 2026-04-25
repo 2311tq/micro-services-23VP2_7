@@ -16,7 +16,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = "localhost:6379";
+    options.Configuration = "localhost";
     options.InstanceName = "service1:";
 });
 
@@ -32,11 +32,20 @@ var activeRequests = Metrics.CreateGauge(
     "active_requests",
     "");
 
-var RequestLatency =
-    Metrics.CreateSummary(
-        "api_request_duration_seconds",
-        ""
-     );
+<<<<<<< HEAD
+var cpuUsageMetric = Metrics.CreateGauge(
+    "cpu_usage_rate",
+    "",
+    new GaugeConfiguration
+    {
+        LabelNames = new[] { "core" }
+    });
+
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> 3f02aaeafe0180cd11293fa0341f03daa8822243
 
 var avgRequestDuration = Metrics.CreateSummary(
     "http_request_avg_duration_ms",
@@ -50,9 +59,12 @@ app.UseHttpMetrics();
 app.Use(async (context, next) =>
 {
     activeRequests.Inc();
+
+=======
   
     var sw = Stopwatch.StartNew();
     
+>>>>>>> 3f02aaeafe0180cd11293fa0341f03daa8822243
 
     uptimeMetric.Set(uptimeTimer.Elapsed.TotalSeconds);
 
