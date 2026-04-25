@@ -15,7 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = "localhost:6379";
+    options.Configuration = "localhost";
     options.InstanceName = "service1:";
 });
 
@@ -38,6 +38,11 @@ var cpuUsageMetric = Metrics.CreateGauge(
     {
         LabelNames = new[] { "core" }
     });
+var RequestLatency =
+    Metrics.CreateSummary(
+        "api_request_duration_seconds",
+        ""
+     );
 
 
 
@@ -48,7 +53,7 @@ app.UseHttpMetrics();
 app.Use(async (context, next) =>
 {
     activeRequests.Inc();
-   
+    var sw = Stopwatch.StartNew();
 
     uptimeMetric.Set(uptimeTimer.Elapsed.TotalSeconds);
 
@@ -64,6 +69,10 @@ app.Use(async (context, next) =>
     }
     finally
     {
+        sw.Stop();
+        var method = context.Request.Method;
+        var path = context.Request.Path;
+        RequestLatency.Observe(sw.Elapsed.TotalSeconds);
         activeRequests.Dec();
     }
 });

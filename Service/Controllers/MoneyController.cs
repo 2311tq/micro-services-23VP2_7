@@ -23,14 +23,7 @@ namespace WebAPIApp.Controllers
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
 
-        private static readonly Histogram RequestLatency =
-            Metrics.CreateHistogram(
-                "api_request_duration_seconds",
-                "",
-                new HistogramConfiguration
-                {
-                    Buckets = Histogram.ExponentialBuckets(0.01, 2, 10)
-                });
+       
 
 
         public MoneyController(IDistributedCache cache)
@@ -311,7 +304,7 @@ namespace WebAPIApp.Controllers
             var cached = await _cache.GetStringAsync(cacheKey);
             if (cached != null)
             {
-                var data = JsonSerializer.Deserialize<IEnumerable<Money_>>(cached);
+                var data = JsonSerializer.Deserialize<Money_>(cached);
                 return Ok(data);
             }
             switch (comparison.ToLower())
