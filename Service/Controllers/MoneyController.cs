@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Service.Models;
 using Prometheus;
@@ -22,8 +22,6 @@ namespace WebAPIApp.Controllers
 
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
-
-       
 
 
         public MoneyController(IDistributedCache cache)
