@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Service.Models;
 using Prometheus;
@@ -23,14 +23,7 @@ namespace WebAPIApp.Controllers
         private static readonly Counter RequestsTotal =
   Metrics.CreateCounter("api_requests_total", "");
 
-        private static readonly Histogram RequestLatency =
-            Metrics.CreateHistogram(
-                "api_request_duration_seconds",
-                "",
-                new HistogramConfiguration
-                {
-                    Buckets = Histogram.ExponentialBuckets(0.01, 2, 10)
-                });
+      
 
 
         public MoneyController(IDistributedCache cache)

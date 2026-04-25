@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Prometheus;
 using Service.Models;
 using System.Diagnostics;
+using System.Reflection.Emit;
 using WebAPIApp.Models;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 var builder = WebApplication.CreateBuilder(args);
@@ -31,16 +32,17 @@ var activeRequests = Metrics.CreateGauge(
     "active_requests",
     "");
 
-var cpuUsageMetric = Metrics.CreateGauge(
-    "cpu_usage_rate",
-    "",
-    new GaugeConfiguration
-    {
-        LabelNames = new[] { "core" }
-    });
+var RequestLatency =
+    Metrics.CreateSummary(
+        "api_request_duration_seconds",
+        ""
+     );
 
-
-
+var avgRequestDuration = Metrics.CreateSummary(
+    "http_request_avg_duration_ms",
+    ""
+    );
+    
 
 
 app.UseHttpMetrics();
@@ -48,7 +50,9 @@ app.UseHttpMetrics();
 app.Use(async (context, next) =>
 {
     activeRequests.Inc();
-   
+  
+    var sw = Stopwatch.StartNew();
+    
 
     uptimeMetric.Set(uptimeTimer.Elapsed.TotalSeconds);
 
@@ -59,11 +63,15 @@ app.Use(async (context, next) =>
     }
     catch
     {
-        
+       
         throw;
     }
     finally
     {
+        sw.Stop();
+        var method = context.Request.Method;
+        var path = context.Request.Path;
+        RequestLatency.Observe(sw.Elapsed.TotalSeconds);
         activeRequests.Dec();
     }
 });
